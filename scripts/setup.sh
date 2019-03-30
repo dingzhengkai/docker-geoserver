@@ -19,22 +19,6 @@ create_dir ${FOOTPRINTS_DATA_DIR}
 create_dir ${resources_dir}
 pushd ${resources_dir}
 
-
-
-if [[ ! -f /tmp/resources/jre-8u201-linux-x64.tar.gz ]]; then \
-    wget --progress=bar:force:noscroll -c --no-check-certificate --no-cookies --header \
-    "Cookie: oraclelicense=accept-securebackup-cookie" \
-    https://download.oracle.com/otn-pub/java/jdk/8u201-b09/42970487e3af4f5aa5bca3f542482c60/jdk-8u201-linux-x64.tar.gz
-fi;
-
-#Policy
-
-if [[ ! -f /tmp/resources/jce_policy.zip ]]; then \
-    wget --progress=bar:force:noscroll -c --no-check-certificate --no-cookies --header \
-    "Cookie: oraclelicense=accept-securebackup-cookie" \
-    http://download.oracle.com/otn-pub/java/jce/8/jce_policy-8.zip -O /tmp/resources/jce_policy.zip
-fi;
-
 work_dir=`pwd`
 
 create_dir ${work_dir}/plugins
@@ -77,13 +61,6 @@ if [[ ! -f /tmp/resources/libjpeg-turbo-official_1.5.3_amd64.deb ]]; then \
     cd /tmp/resources/ && \
     dpkg -i libjpeg-turbo-official_1.5.3_amd64.deb
 
-# If a matching Oracle JDK tar.gz exists in /tmp/resources, move it to /var/cache/oracle-jdk8-installer
-# where oracle-java8-installer will detect it
-if ls /tmp/resources/*jdk-*-linux-x64.tar.gz > /dev/null 2>&1; then \
-      mkdir /var/cache/oracle-jdk8-installer && \
-      mv /tmp/resources/*jdk-*-linux-x64.tar.gz /var/cache/oracle-jdk8-installer/; \
-    fi;
-
 # Build geogig and other community modules
 
 if  [[ "$COMMUNITY_MODULES" == true ]]; then
@@ -101,27 +78,6 @@ if  [[ "$COMMUNITY_MODULES" == true ]]; then
 else
     echo "Building community modules will be disabled"
 fi;
-# Install Oracle JDK (and uninstall OpenJDK JRE) if the build-arg ORACLE_JDK = true or an Oracle tar.gz
-# was found in /tmp/resources
-
-if ls /var/cache/oracle-jdk8-installer/*jdk-*-linux-x64.tar.gz > /dev/null 2>&1 || [[ "${ORACLE_JDK}" = true ]]; then \
-       apt-get autoremove --purge -y openjdk-8-jre-headless && \
-       echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true \
-         | debconf-set-selections && \
-       echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" \
-         > /etc/apt/sources.list.d/webupd8team-java.list && \
-       apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EEA14886 && \
-       rm -rf /var/lib/apt/lists/* && \
-       apt-get update && \
-       apt-get install -y oracle-java8-installer oracle-java8-set-default && \
-       ln -s --force /usr/lib/jvm/java-8-oracle /usr/lib/jvm/default-java && \
-       rm -rf /var/lib/apt/lists/* && \
-       rm -rf /var/cache/oracle-jdk8-installer; \
-       if [[ -f /tmp/resources/jce_policy.zip ]]; then \
-         unzip -j /tmp/resources/jce_policy.zip -d /tmp/jce_policy && \
-         mv /tmp/jce_policy/*.jar ${JAVA_HOME}/jre/lib/security/; \
-       fi; \
-    fi;
 
 pushd /tmp/
 
